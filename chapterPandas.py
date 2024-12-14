@@ -101,19 +101,23 @@ def indexingSelection():
 
 # indexingSelection()
 
+
 def indexAlign():
     area = pd.Series(
         {"Alaska": 1723337, "Texas": 695662, "California": 423967}, name="area"
     )
     population = pd.Series(
-        {"California": 39538223, "Texas": 29145505, "Florida": 21538187}, name="population"
+        {"California": 39538223, "Texas": 29145505, "Florida": 21538187},
+        name="population",
     )
 
     print(population.div(area, fill_value=0).replace(inf, 0))
 
     print(area.index.union(population.index))
 
+
 # indexAlign()
+
 
 def nullValues():
     vals1 = np.array([1, None, 2, 3])
@@ -122,20 +126,166 @@ def nullValues():
     vals1 = np.array([1, np.nan, 2, 3])
     print(vals1.sum(), vals1.min(), vals1.max())
     print(np.nansum(vals1))
-    
+
     x = pd.Series(range(2), dtype=int)
     print(x)
     x[0] = None
     print(x)
-    
+
     x = pd.Series([1, np.nan, 2, None, pd.NA], dtype="Int32")
     print(x)
-    
-    data = pd.Series([1, np.nan, 'Hello', None])
+
+    data = pd.Series([1, np.nan, "Hello", None])
     print(data.isnull())
     print(data[data.notnull()])
     print(data.dropna())
-    
-nullValues()
+
+    df = pd.DataFrame([[1, np.nan, 2], [2, 3, 5], [np.nan, 4, 6]])
+    print(df)
+    print(df.dropna())
+
+    print("-----------------------")
+    data = pd.Series([1, np.nan, 2, None, 3], index=list("abcde"), dtype="Int32")
+    print(data)
+    print(data.fillna(0))
+    print(data.ffill())
+    print(data.bfill())
+    print(data)
 
 
+# nullValues()
+
+
+def hierarchicalIndexing():
+    index = [
+        ("California", 2010),
+        ("California", 2020),
+        ("New York", 2010),
+        ("New York", 2020),
+        ("Texas", 2010),
+        ("Texas", 2020),
+    ]
+    populations = [37253956, 39538223, 19378102, 20201249, 25145561, 29145505]
+
+    pop = pd.Series(populations, index=index)
+    print(pop)
+    print(pop[("California", 2020):("Texas", 2010)])
+    print(pop[[i for i in pop.index if i[1] == 2010]])
+
+    index = pd.MultiIndex.from_tuples(index)
+    pop = pop.reindex(index)
+    print(pop)
+    print(pop[:, 2020])
+
+    pop_df = pop.unstack()
+    print(pop_df)
+    print(pop_df.stack())
+
+    pop_df = pd.DataFrame(
+        {
+            "total": pop,
+            "under18": [9284094, 8898092, 4318033, 4181528, 6879014, 7432474],
+        }
+    )
+    print(pop_df)
+
+    f_u18 = pop_df["under18"] / pop_df["total"]
+    print(f_u18.unstack())
+
+
+# hierarchicalIndexing()
+
+
+def mergeConcatDf():
+    print(makeDf("ABV", range(3)))
+
+    ser1 = pd.Series(["A", "B", "C"], range(1, 4))
+    ser2 = pd.Series(["D", "E", "F"], range(4, 7))
+
+    print(pd.concat([ser1, ser2]))
+
+    x = makeDf("AB", [0, 1])
+    y = makeDf("AB", [2, 3])
+    y.index = x.index  # make indices match
+
+
+def makeDf(cols, idx):
+    data = {c: [str(c) + str(i) for i in idx] for c in cols}
+    return pd.DataFrame(data, idx)
+
+
+# mergeConcatDf()
+
+
+def relationalAlgebra():
+    df1 = pd.DataFrame(
+        {
+            "employee": ["Bob", "Jake", "Lisa", "Sue"],
+            "group": ["Accounting", "Engineering", "Engineering", "HR"],
+        }
+    )
+    df2 = pd.DataFrame(
+        {
+            "employee": ["Lisa", "Bob", "Jake", "Sue"],
+            "hire_date": [2004, 2008, 2012, 2014],
+        }
+    )
+
+    print(df1, df2)
+
+    df3 = pd.merge(df1, df2)
+
+    print(df3)
+
+    df4 = pd.DataFrame(
+        {
+            "group": ["Accounting", "Engineering", "HR"],
+            "supervisor": ["Carly", "Guido", "Steve"],
+        }
+    )
+
+    df5 = pd.merge(df3, df4)
+    print(df5)
+
+    df6 = pd.DataFrame(
+        {
+            "group": [
+                "Accounting",
+                "Accounting",
+                "Engineering",
+                "Engineering",
+                "HR",
+                "HR",
+            ],
+            "skills": [
+                "math",
+                "spreadsheets",
+                "software",
+                "math",
+                "spreadsheets",
+                "organization",
+            ],
+        }
+    )
+
+    df7 = pd.merge(df5, df6)
+    print(df7)
+
+    df6 = pd.DataFrame(
+        {"name": ["Peter", "Paul", "Mary"], "food": ["fish", "beans", "bread"]},
+        columns=["name", "food"],
+    )
+    df7 = pd.DataFrame(
+        {"name": ["Mary", "Joseph"], "drink": ["wine", "beer"]},
+        columns=["name", "drink"],
+    )
+
+    print(pd.merge(df6, df7, how="inner"))
+    print(pd.merge(df6, df7, how="outer"))
+
+    df8 = pd.DataFrame({"name": ["Bob", "Jake", "Lisa", "Sue"], "rank": [1, 2, 3, 4]})
+    df9 = pd.DataFrame({"name": ["Bob", "Jake", "Lisa", "Sue"], "rank": [3, 1, 4, 2]})
+    print(pd.merge(df8, df9))
+
+
+relationalAlgebra()
