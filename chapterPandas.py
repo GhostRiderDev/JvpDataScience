@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from math import inf
+import seaborn as sns
 
 
 def basic():
@@ -285,7 +286,97 @@ def relationalAlgebra():
 
     df8 = pd.DataFrame({"name": ["Bob", "Jake", "Lisa", "Sue"], "rank": [1, 2, 3, 4]})
     df9 = pd.DataFrame({"name": ["Bob", "Jake", "Lisa", "Sue"], "rank": [3, 1, 4, 2]})
-    print(pd.merge(df8, df9))
+    print(pd.merge(df8, df9, on="name", suffixes=["_L", "_R"]))
+
+    pop = pd.read_csv("data/state-population.csv")
+    areas = pd.read_csv("data/state-areas.csv")
+    abbrevs = pd.read_csv("data/state-abbrevs.csv")
+
+    merged = pd.merge(
+        pop, abbrevs, how="outer", left_on="state/region", right_on="abbreviation"
+    )
+
+    merged = merged.drop("abbreviation", axis=1)
+    print(merged)
+    print(merged.isnull().any())
+    print(merged[merged["population"].isnull()].head())
+    print(merged.loc[merged["state"].isnull(), "state/region"].unique())
+    merged.loc[merged["state/region"] == "PR", "state"] = "Puerto Rico"
+    merged.loc[merged["state/region"] == "USA", "state"] = "United States"
+
+    print(merged.isnull().any())
+
+    final = pd.merge(merged, areas, on="state", how="left")
+    print(final)
+
+    print(final.isnull().any())
+
+    print(final["state"][final["area (sq. mi)"].isnull()].unique())
+
+    final.dropna(inplace=True)
+    print(final.head())
+
+    data2010 = final.query("year == 2010 & ages == 'total'")
+    print(data2010)
+
+    data2010.set_index("state", inplace=True)
+    print(data2010)
+    density = data2010["population"] / data2010["area (sq. mi)"]
+    density.sort_values(ascending=False, inplace=True)
+    print(density.head())
 
 
-relationalAlgebra()
+# relationalAlgebra()
+def filterFunc(x):
+    return x["data2"].std() > 4
+
+def center(x):
+    return x - x.mean()
+
+def norm_by_data2(x):
+    x["data1"] /= x["data2"].sum()
+    return x
+
+
+def grouping():
+    planets = sns.load_dataset("planets")
+    print(planets.shape)
+    print(planets.head())
+    print(planets.dropna().describe())
+
+    df = pd.DataFrame(
+        {"key": ["A", "B", "C", "A", "B", "C"], "data": range(6)},
+        columns=["key", "data"],
+    )
+
+    print(df)
+    print(df.groupby("key"))
+    print(df.groupby("key").sum())
+    print(planets.groupby("method")["orbital_period"])
+
+    for method, group in planets.groupby("method"):
+        print("{0:30s} shape={1}".format(method, group.shape))
+
+    rng = np.random.RandomState(0)
+    df = pd.DataFrame(
+        {
+            "key": ["A", "B", "C", "A", "B", "C"],
+            "data1": range(6),
+            "data2": rng.randint(0, 10, 6),
+        },
+        columns=["key", "data1", "data2"],
+    )
+
+    print(df.groupby("key").aggregate(["min", np.median, max]))
+    print(df.groupby("key").aggregate({"data1": "min", "data2": "max"}))
+
+    print(df.groupby("key").filter(filterFunc))
+
+    print(df.groupby("key").transform(center))
+
+    print(df.groupby("key").apply(norm_by_data2))
+
+    L = [0, 1, 0, 1, 2, 0]
+    print(df.groupby(L).sum())
+
+grouping()
