@@ -2,6 +2,13 @@ import pandas as pd
 import numpy as np
 from math import inf
 import seaborn as sns
+from datetime import datetime
+from dateutil import parser
+import os
+import requests
+import json
+import yfinance as yf
+import matplotlib.pyplot as plt
 
 
 def basic():
@@ -330,8 +337,10 @@ def relationalAlgebra():
 def filterFunc(x):
     return x["data2"].std() > 4
 
+
 def center(x):
     return x - x.mean()
+
 
 def norm_by_data2(x):
     x["data1"] /= x["data2"].sum()
@@ -357,7 +366,7 @@ def grouping():
     for method, group in planets.groupby("method"):
         print("{0:30s} shape={1}".format(method, group.shape))
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     df = pd.DataFrame(
         {
             "key": ["A", "B", "C", "A", "B", "C"],
@@ -379,4 +388,75 @@ def grouping():
     L = [0, 1, 0, 1, 2, 0]
     print(df.groupby(L).sum())
 
-grouping()
+
+# grouping()
+
+
+def pivotTables():
+    titanic = sns.load_dataset("titanic")
+
+    print(titanic.head())
+
+    print(titanic.groupby("sex")[["survived"]].mean())
+    print(titanic.groupby(["sex", "class"])["survived"].aggregate("mean").unstack())
+
+    print(titanic.pivot_table("survived", index="sex", columns="class", aggfunc="mean"))
+
+
+# pivotTables()
+
+
+def timeSeries():
+    print(datetime(year=2021, month=7, day=4))
+    date = parser.parse("4th of July, 2021")
+    print(date)
+    print(date.strftime("%A"))
+    date = np.array("2024-07-12", dtype=np.datetime64)
+    print(date)
+
+    dateArray = date + np.arange(12)
+    print(dateArray)
+
+    print(np.datetime64("2021-12-07 12:30"))
+    date = pd.to_datetime("4th of July, 2023")
+    print(date)
+
+    index = pd.DatetimeIndex(["2021-04-23", "2022-07-12", "2014-05-09", "2021-08-19"])
+
+    data = pd.Series([0, 1, 2, 3], index=index)
+
+    print(data)
+    print(data["2021"])
+
+    dates = pd.to_datetime(
+        [
+            datetime(2024, 12, 9),
+            "4th of July, 2021",
+            "2021-Jul-6",
+            "07-07-2021",
+            "20210708",
+        ]
+    )
+
+    print(pd.DatetimeIndex(dates))
+    print(dates.to_period("D"))
+    print(dates - dates[0])
+    print(pd.date_range("2021-07-09", "2021-07-23"))
+    print(pd.date_range("2024-12-01", periods=8))
+    print(pd.date_range("2024-12-01", periods=8, freq="h"))
+    print(pd.date_range("2024-12-01", periods=8, freq="M"))
+    print(pd.timedelta_range(0, periods=6, freq="2H30T"))
+
+    dat = yf.Ticker("MSFT")
+    
+    data = dat.history(period="max")
+
+    print(data.head())
+    print(data.columns)
+    closingPrices = data["Close"]
+    closingPrices.plot(title="MSFT Closing Prices")
+    plt.xlabel("Date")
+    plt.ylabel("Closing Price")
+    plt.savefig("proyecciones.png")
+
+timeSeries()
