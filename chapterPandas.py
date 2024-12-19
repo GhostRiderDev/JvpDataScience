@@ -448,7 +448,7 @@ def timeSeries():
     print(pd.timedelta_range(0, periods=6, freq="2H30T"))
 
     dat = yf.Ticker("MSFT")
-    
+
     data = dat.history(period="max")
 
     print(data.head())
@@ -459,4 +459,83 @@ def timeSeries():
     plt.ylabel("Closing Price")
     plt.savefig("proyecciones.png")
 
-timeSeries()
+    closingPrices.plot()
+    closingPrices.resample("BYE").mean().plot(style=":")
+    closingPrices.asfreq("BYE").plot(style="--")  # BYE is Business Year end
+    plt.legend(["input", "resample", "asfreq"], loc="upper left")
+    plt.savefig("proyecciones2.png")
+    
+    plt.close()
+
+    data = closingPrices.asfreq("D", method="pad")
+
+    ROI = 100 * (data.shift(-365) - data) / data
+    ROI.plot()
+    plt.ylabel("% Return on Investment after 1 year")
+    plt.savefig("return.png")
+    
+    plt.close()
+    
+    rolling = closingPrices.rolling(365, center=True)
+    
+    data = pd.DataFrame({
+        "input": closingPrices,
+        "one-year rolling_mean": rolling.mean(),
+        "one-year rolling_median": rolling.median()
+    })
+    
+    ax = data.plot(style=["-", "--", ":"])
+    ax.lines[0].set_alpha(0.3)
+    plt.savefig("rolling.png")
+
+
+# timeSeries()
+
+def fremontTimeSeries():
+    data = pd.read_csv("data/FremontBridge.csv", index_col="Date", parse_dates=True)
+    print(data.head())
+    data.columns = ['Total', 'East', 'West']
+    data.dropna()
+    print(data.describe())
+    data.plot()
+    plt.ylabel("Hourly Bicycle Count")
+    plt.savefig("fremontBycicle")
+    
+    plt.close()
+    
+    weekly = data.resample("W").sum()
+    weekly.plot(style=["-", ":", "--"])
+    plt.ylabel('Weekly bicycle count')
+    plt.savefig("FremonWeekly")
+    
+    plt.close()
+    
+    by_time = data.groupby(data.index.time).mean()
+    
+    
+    hourly_ticks = 4 * 60 * 60 + np.arange(6)
+    
+    by_time.plot(xticks=hourly_ticks, style=['-', ':', '--'])
+    
+    plt.savefig("freemontHourlyTicks.png")
+    plt.close()
+    
+    by_weekday = data.groupby(data.index.dayofweek).mean()
+    
+    by_weekday.index = ['Mon', 'Tues', 'Wed', 'Thurs', 'Fri', 'Sat', 'Sun']
+    by_weekday.plot(style=['-', ':', '--'])
+    
+    plt.savefig("freemontWeekday.png")
+    
+    plt.close()
+    
+    weekend = np.where(data.index.weekday < 5, 'Weekday', 'Weekend')
+    by_time = data.groupby([weekend, data.index.time]).mean()
+    
+    fig, ax = plt.subplots(1, 2, figsize=(14, 5))
+    by_time.loc['Weekday'].plot(ax=ax[0], title='Weekdays',xticks=hourly_ticks, style=['-', ':', '--'])
+    by_time.loc['Weekend'].plot(ax=ax[1], title='Weekends', xticks=hourly_ticks, style=['-', ':', '--'])
+    
+    plt.savefig("fremont_weekdayVSweekend.png")
+
+fremontTimeSeries()
